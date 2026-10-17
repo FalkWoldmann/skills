@@ -1,0 +1,107 @@
+{
+  "skill_name": "sansio-readability",
+  "evals": [
+    {
+      "id": 0,
+      "name": "sansio-dns-resolver",
+      "prompt": "src/resolver.rs has gotten hard to follow. Make the resolver state machine easier to read and understand without changing what it does.",
+      "expected_output": "Behaviour-preserving readability refactor of the state machine, committed in small steps, plus a summary with state map, changes, left alone, suggestions, verification.",
+      "files": [
+        "fixtures/sansio-dns (git archive of sansio-dns ec19b53)"
+      ],
+      "assertions": [
+        "Success and failure completion are built in one function",
+        "Queuing a TcpClose transmit goes through one helper",
+        "Lifecycle documented in module or type docs",
+        "Docs mapping behaviour to functions stay accurate",
+        "The deadline-restart formula is written once per rule",
+        "The summary includes a map of the state machine part that was changed (states, inputs/transitions, outputs), e.g. a table",
+        "The summary reports which verification commands were run and their results",
+        "The summary separates suggestions that would need a public API or behaviour change from the applied changes",
+        "The final code has no behaviour change found by careful review of the diff (queue order of transmits/events, deadlines, errors, emitted outputs)",
+        "The changes avoid new clones/allocations on per-packet or per-query paths",
+        "fmt, clippy -D warnings and the tests pass on every feature set",
+        "No existing test line was changed or removed (new tests allowed)",
+        "cargo semver-checks finds no public API break (default and all features)"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "tftp-client",
+      "prompt": "I wrote this TFTP client as a sans-IO state machine (src/lib.rs) in a hurry and now I can't follow it anymore myself. Can you clean it up so the state machine is easy to read? It has to keep behaving exactly the same.",
+      "expected_output": "Behaviour-preserving readability refactor of the state machine, committed in small steps, plus a summary with state map, changes, left alone, suggestions, verification.",
+      "files": [
+        "fixtures/tftp-client (synthetic, planted problems in tftp-client.fixture.json)"
+      ],
+      "assertions": [
+        "Planted problem 1 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 2 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 3 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 4 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 5 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 6 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 7 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 8 fixed (see fixtures/tftp-client.fixture.json)",
+        "Planted problem 9 fixed (see fixtures/tftp-client.fixture.json)",
+        "The summary includes a map of the state machine part that was changed (states, inputs/transitions, outputs), e.g. a table",
+        "The summary reports which verification commands were run and their results",
+        "The summary separates suggestions that would need a public API or behaviour change from the applied changes",
+        "The final code has no behaviour change found by careful review of the diff (queue order of transmits/events, deadlines, errors, emitted outputs)",
+        "The changes avoid new clones/allocations on per-packet or per-query paths",
+        "fmt, clippy -D warnings and the tests pass on every feature set",
+        "No existing test line was changed or removed (new tests allowed)",
+        "cargo semver-checks finds no public API break (default and all features)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "socks5-handshake",
+      "prompt": "the socks5 handshake crate here is a mess, can you make the code readable? it's the core lib under our tokio and smol drivers so keep the API stable",
+      "expected_output": "Behaviour-preserving readability refactor of the state machine, committed in small steps, plus a summary with state map, changes, left alone, suggestions, verification.",
+      "files": [
+        "fixtures/socks5-handshake (synthetic, planted problems in socks5-handshake.fixture.json)"
+      ],
+      "assertions": [
+        "Planted problem 1 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 2 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 3 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 4 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 5 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 6 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 7 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 8 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "Planted problem 9 fixed (see fixtures/socks5-handshake.fixture.json)",
+        "The summary includes a map of the state machine part that was changed (states, inputs/transitions, outputs), e.g. a table",
+        "The summary reports which verification commands were run and their results",
+        "The summary separates suggestions that would need a public API or behaviour change from the applied changes",
+        "The final code has no behaviour change found by careful review of the diff (queue order of transmits/events, deadlines, errors, emitted outputs)",
+        "The changes avoid new clones/allocations on per-packet or per-query paths",
+        "fmt, clippy -D warnings and the tests pass on every feature set",
+        "No existing test line was changed or removed (new tests allowed)",
+        "cargo semver-checks finds no public API break (default and all features)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "sansio-dns-timeout-small",
+      "prompt": "handle_timeout in src/resolver.rs does too much in one function and I always have to reread it. can you make just that part easier to follow?",
+      "expected_output": "A small, scoped refactor of handle_timeout into named steps, verified with the project checks only, and a short summary.",
+      "files": [
+        "fixtures/sansio-dns (git archive of sansio-dns ec19b53)"
+      ],
+      "assertions": [
+        "handle_timeout reads as a short sequence of named steps, effect order unchanged",
+        "The change stays scoped to handle_timeout and its helpers",
+        "Verification is proportionate (no harness, fuzz or bench)",
+        "The summary includes a map of the state machine part that was changed (states, inputs/transitions, outputs), e.g. a table",
+        "The summary reports which verification commands were run and their results",
+        "The summary separates suggestions that would need a public API or behaviour change from the applied changes",
+        "The final code has no behaviour change found by careful review of the diff (queue order of transmits/events, deadlines, errors, emitted outputs)",
+        "The changes avoid new clones/allocations on per-packet or per-query paths",
+        "fmt, clippy -D warnings and the tests pass on every feature set",
+        "No existing test line was changed or removed (new tests allowed)",
+        "cargo semver-checks finds no public API break (default and all features)"
+      ]
+    }
+  ]
+}
