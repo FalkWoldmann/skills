@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: full-pass-planted-hotspots
+expected_outcome: |
+  A measured performance pass over the litemark crate: a baseline, the hot spots found by profiling, changes applied in the working tree, before and after numbers for each, a check that output is unchanged, and a report that includes limits and anything that did not help.
+context:
+  scaffold_script: place-files.sh

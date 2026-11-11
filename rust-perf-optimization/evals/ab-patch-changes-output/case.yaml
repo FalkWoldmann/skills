@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: ab-patch-changes-output
+expected_outcome: |
+  An answer that measures the original and the patched build, confirms the patch is much faster, and finds that it changes output: a double quote is no longer escaped in text that contains none of the characters ampersand, less-than, greater-than. The recommendation is not to merge it as it is.
+context:
+  scaffold_script: place-files.sh

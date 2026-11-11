@@ -8,6 +8,11 @@ at the top.
   and timers, refactors in small checked steps (with an optional old-vs-new differential
   harness), and summarizes. `evals/` holds the test prompts and assertions used to
   develop it.
+- [`rust-perf-optimization`](rust-perf-optimization/SKILL.md): measured performance work on
+  a Rust crate. It records a baseline with instruction counts and output hashes, profiles down
+  to source lines and allocation sites, prototypes one candidate at a time, tries to refute
+  each win with adversarial inputs, and reports gains, costs and negative results. Bundles
+  scripts for callgrind A/B runs, DHAT summaries and alternating wall-clock timing.
 
 ## Install
 
