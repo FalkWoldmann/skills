@@ -1,6 +1,6 @@
 ---
 name: rust-perf-optimization
-description: 'Use this skill for any performance work on a Rust crate or binary: "make this faster", "optimize X", "why is this slow", "profile this", "find hot paths", "reduce allocations", "is this change actually faster", "would crate Y or SIMD speed this up", or a request for a performance pass, audit or review of a library, parser, encoder, CLI or service. It runs a measured workflow: find the project''s own benchmark and rules, record a baseline with deterministic instruction counts and output hashes, profile down to source lines and allocation sites, prototype one candidate at a time, try to refute each win with adversarial inputs, confirm on wall-clock time, and report gains, costs and negative results in one table. Use it even for a quick A/B question, because it carries the pitfalls that make benchmark numbers wrong. Not for compile-time or binary-size work, for correctness bugs, or for tuning a deployed system (database settings, autoscaling, network).'
+description: 'Use this skill for any performance work on a Rust crate or binary: "make this faster", "optimize X", "why is this slow", "profile this", "find hot paths", "reduce allocations", "is this change actually faster", "would crate Y or SIMD speed this up", or a request for a performance pass, audit or review of a library, parser, encoder, template engine, CLI, network client, server or async runtime. It runs a measured workflow: find the project''s own benchmark and rules, record a baseline with deterministic instruction counts and output hashes, profile down to source lines and allocation sites, prototype one candidate at a time, try to refute each win with adversarial inputs, confirm on wall-clock time or, for clients and servers, on a load harness (throughput, CPU per unit of work, latency), and report gains, costs and negative results in one table. Use it even for a quick A/B question, because it carries the pitfalls that make benchmark numbers wrong. Not for compile-time or binary-size work, for correctness bugs, or for tuning a deployed system (database settings, autoscaling, network).'
 ---
 
 # Measured performance work on Rust crates
@@ -39,9 +39,22 @@ some input, or subtly wrong, and treat those results as part of the deliverable:
 
 ## Size the work to the question
 
-A question like "is this version faster?" needs steps 3 and 6: build both, measure both,
-answer. A request for a performance pass needs all of them. Fan out to several agents only
-when the user asked for that scale (see the last section).
+Match the effort to what was asked. A quick question should get an answer in a few minutes.
+
+- "Is this patch or version faster, can I merge it?" Build both, measure the main input and
+  two guards, read the diff for behaviour, and compare the two binaries on a few thousand
+  random inputs. That is steps 3, 6 and the diff and random-input parts of 7. No profiling, no
+  further prototypes.
+- "Would crate X or technique Y help?" Take one profile and answer from it: name the cost the
+  crate would remove, or say that the profile has no such cost and what it shows instead.
+  Prototype only when the user asks for an implementation.
+- "Make it faster", a performance pass, an audit: all steps.
+
+Fan out to several agents only when the user asked for that scale (see the last section).
+
+For a client, a server or a runtime, where speed shows up as throughput or latency against
+another process, read [references/services.md](references/services.md) first. The steps stay
+the same, but most of the measuring moves from instruction counts to a load harness.
 
 ## Steps
 
@@ -210,8 +223,10 @@ the patches and the result files where the user can find them, and say where.
 
 ## The report
 
-Lead with the answer, then one table. Keep every row that was measured, including the ones
-that failed:
+Lead with the answer, then one table with a row per idea. When a second form replaced the
+first, give one row for the idea with the final form's numbers and mention the earlier form in
+the notes below. Ideas that were measured and dropped stay in the table, because a reader
+would otherwise try them again:
 
 ```markdown
 | Finding | Main workload | Guards | Verdict |
@@ -225,6 +240,11 @@ After the table: the combined number, what was not measured (time, a target, an 
 combination), what would change public types or needs a design decision and so belongs in an
 issue, and where the patches are. Give instructions and time as separate numbers and name the
 machine the times came from.
+
+For each change that is kept, the reader should find three numbers without opening a file:
+the count or time before, the count or time after, and the effect on the worst input you
+found for it. A percentage alone hides whether the base was the original code or an earlier
+step.
 
 When the project wants human-written code, add for each confirmed finding a short explanation
 in prose: what the existing code does, why it costs what it costs, and what the idea is. Do

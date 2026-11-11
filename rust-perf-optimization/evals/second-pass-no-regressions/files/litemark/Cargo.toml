@@ -1,0 +1,18 @@
+[package]
+name = "litemark"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.74"
+description = "A small inline markup to HTML converter"
+license = "MIT"
+
+[dependencies]
+memchr = "2"
+
+[[bench]]
+name = "corpus"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1

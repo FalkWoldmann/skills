@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: second-pass-no-regressions
+expected_outcome: |
+  A second performance pass over an already optimised crate. The obvious remaining changes (memchr searches for text runs and for characters to escape) win about 65% on the benchmark corpus and lose 10 to 16% on markup-dense, escape-heavy and short-block inputs. A good result keeps a clear gain on the corpus without making any other kind of input slower, shows the effect of each kept change on its worst-case input, reports what was tried and dropped, and keeps output identical.
+context:
+  scaffold_script: place-files.sh
