@@ -115,7 +115,10 @@ Check the harness before trusting it:
 - Are the absolute numbers plausible? A benchmark that parses megabytes in nanoseconds read an
   empty input, usually through a relative path from the wrong directory.
 - Is the baseline the commit you think it is? Record the commit hash next to the numbers, and
-  check it again in every fresh worktree.
+  check it again in every fresh worktree. Check `git status` too: a hash says nothing about a
+  prototype that is still applied.
+- Do different cases give different counts? Identical counts for every case mean the harness
+  never reached the workload (a panic on bad arguments, an empty input).
 
 Keep the baseline binary. Every later comparison uses it.
 
@@ -124,7 +127,10 @@ Keep the baseline binary. Every later comparison uses it.
 Take a line-level instruction profile and an allocation profile of the baseline on the main
 workload (commands in the reference). Read the inclusive listing first to see which phases
 cost what, then the self costs, then the annotated lines of the top functions. Write down the
-harness overhead you found so nobody chases it.
+harness overhead you found so nobody chases it. When the function names look wrong (a small
+callee holding half of all self cost, an inclusive listing that never finishes), calls through
+`dyn` are probably tail calls; `<skill>/scripts/cg-lines.py` sums the profile by source line
+instead, which stays exact.
 
 For allocations, `<skill>/scripts/dhat-top.py dhat.json` lists the sites by count and by
 bytes. The allocator's share of instructions tells you the ceiling for allocation work.
@@ -153,7 +159,8 @@ that the profile has no such cost.
 ### 6. Prototype and measure, one at a time
 
 For each candidate: make the smallest change that tests the idea, build with the project's
-release profile, and compare.
+release profile and one codegen unit (with 16, unrelated edits move counts by percents; the
+reference has the numbers), and compare.
 
 ```sh
 <skill>/scripts/cg-measure.sh path/to/variant-binary cases.txt > variant.txt
@@ -187,8 +194,14 @@ prototype that helps:
 - compare outputs against the baseline binary on generated inputs, a few thousand small random
   documents built from the syntax the change touches. Matching hashes on the benchmark files
   plus a green test suite have let real behaviour changes through;
+- when the change touches buffering, I/O or error handling, drive the error paths too: a
+  writer that fails after N bytes (once accepting partial writes, once not), a value that
+  fails halfway through. That found the only behaviour change in a buffering patch whose
+  outputs matched everywhere else;
 - run the tests the way CI does (default, all features, no default features) and the lints on
-  the MSRV toolchain;
+  the MSRV toolchain. When some fail, run the same tests on the clean baseline built the same
+  way before blaming the change: snapshot and UI tests often embed paths that a target
+  directory outside the workspace changes;
 - ask what happens on targets without the fast instruction set (wasm without SIMD, older x86)
   when the change relies on one, and say so if you cannot measure it.
 
@@ -203,6 +216,11 @@ alternate the binaries over several rounds and compare medians:
 ```sh
 <skill>/scripts/ab-time.py --rounds 5 --runs 20 base='./base in.md' new='./new in.md'
 ```
+
+If the user has a dedicated benchmark machine, use it rather than a laptop or a VM that shares
+cores with other builds, and keep your own measurements off it while it times. On x86, code
+layout alone can move a result by a few percent, so for a small difference time a second build
+of the same change before calling it.
 
 For benchmark-framework binaries (divan, criterion) alternate whole runs of each binary the
 same way. Check the machine's load before and after, and throw away rounds that disagree with

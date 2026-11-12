@@ -42,6 +42,19 @@ instructions, and occasionally by a percent on a small input, because paths and 
 When a delta is that small, build the baseline in the same directory as the variant and
 compare those two.
 
+Codegen units move counts much more than that. With the default 16 per crate, which functions
+share a unit, and so what gets inlined where, changes with edits far away from the hot path:
+in a template engine, editing one unrelated template moved the main case by 3.1%. With
+`CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1` the same edit moved it by 41 instructions. Build every
+variant with one codegen unit unless the project's profile already sets it, and say so next to
+the numbers, since it is not what the project's own benchmark builds.
+
+Build each variant from a clean tree: apply the saved patch, build, copy the binary out,
+restore the tree, and refuse to build when `git status` shows anything. A small script that
+does exactly that pays for itself on the second variant. The commit hash next to the numbers
+does not catch a prototype that is still applied, which is how one baseline once got built
+with a candidate in it.
+
 ## Instruction counts
 
 ```sh
@@ -57,6 +70,11 @@ check that the top entries are library code. Typical surprises: UTF-8 validation
 in `main`, a default feature of the CLI (syntax highlighting, colour, config file lookup),
 output formatting. Turn them off with flags where possible, and otherwise report "x% of the
 run is harness".
+
+When valgrind runs in a VM or container, call the scripts by a path that exists in there.
+`<skill>` is often a symlink (from `~/.claude/skills` into a repository, say) that the VM does
+not mount; `realpath <skill>` gives the directory it points to, or copy `scripts/` next to the
+results.
 
 ## Line-level profiles
 
@@ -84,6 +102,21 @@ callgrind_annotate cg.out > self.txt                     # self cost, then annot
 it whole. Inlined callees are charged to the line that calls them, and a heavily inlined
 function can show most of its cost under a caller's name; the annotated source of the callee's
 file still shows the per-line numbers.
+
+Tail calls break the function view. A call through `dyn Trait` (a `&mut dyn fmt::Write`, a
+boxed callback) often compiles to a jump, and callgrind then charges the caller's loop to the
+callee: in a template engine `<String as fmt::Write>::write_str'2` showed half of all self cost,
+including the render loop, and `callgrind_annotate --inclusive=yes` ran for minutes on the
+cycles without finishing. Line attribution comes from debug info and stays exact, so sum by
+source line instead:
+
+```sh
+scripts/cg-lines.py cg.out files 20              # cost per source file, inlined code included
+scripts/cg-lines.py cg.out lines 40 'src/'       # hottest lines of the crate's own files
+```
+
+Call counts (`calls=` records) stay reliable under tail calls, so "how many writes per
+element" can still be answered from the profile file.
 
 ## Allocation profiles
 
@@ -116,6 +149,14 @@ and after; a desktop session, an indexer or a second build makes a 2% effect inv
   mention the disturbed round.
 - If the medians of the same binary move by more than the effect between rounds, the machine
   is too noisy. Stop and report instruction counts only.
+- Keep your own work off the machine while it times. A valgrind run on another core lowers the
+  turbo clock of the one being timed, so queue instruction counts after the timing run. When
+  someone else uses the machine during a run (a package install, a login), retime the cases
+  whose rounds overlapped instead of trusting the disturbed-round flag alone.
+- Code layout alone moves time by several percent on x86. Three builds with the same source on
+  the hot path and the same instruction count timed −0.1%, +3.4% and +5.6% against one
+  baseline. Before reporting a small time difference as a gain or a loss, time a second build
+  of the same change (together with an unrelated patch, for example) and give the spread.
 
 `scripts/ab-time.py` does the alternation for whole-process runs. `hyperfine` is a good
 general tool for timing commands when it is installed, but it runs each command's samples in
@@ -190,3 +231,8 @@ being repeatable. With that, three runs of a producer agreed to 0.03%.
 - Seven identical output hashes and three passing test runs did not notice a lost footnote.
 - Medians on a shared VM moved by several percent between rounds while the effect under test
   was 2%.
+- A shell loop over the cases passed each case as one argument, because zsh does not split an
+  unquoted variable. Every case measured the same 417,000 instructions, the start-up cost of a
+  panic. Identical counts for different cases mean the harness did not run.
+- A baseline built while a prototype was still applied. It looked fine because its commit hash
+  was right; `git status` would have shown it.

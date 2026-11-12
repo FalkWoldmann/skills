@@ -12,7 +12,8 @@ at the top.
   a Rust crate. It records a baseline with instruction counts and output hashes, profiles down
   to source lines and allocation sites, prototypes one candidate at a time, tries to refute
   each win with adversarial inputs, and reports gains, costs and negative results. Bundles
-  scripts for callgrind A/B runs, DHAT summaries and alternating wall-clock timing.
+  scripts for callgrind A/B runs, per-line callgrind summaries, DHAT summaries and
+  alternating wall-clock timing.
 
 ## Install
 
