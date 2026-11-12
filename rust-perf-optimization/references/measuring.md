@@ -2,7 +2,7 @@
 
 Contents: which metric for what, building variants, instruction counts, line-level profiles,
 allocation profiles, wall-clock time, sampling profilers, benchmark-framework binaries, macOS,
-pitfalls.
+async code, build traps, pitfalls.
 
 ## Which metric for what
 
@@ -148,6 +148,36 @@ Without valgrind, `samply record` and `/usr/bin/sample <pid>` give sampling prof
 where time goes, which is enough for step 4. For A/B numbers on a Mac use timing with
 alternation, or run callgrind in a Linux VM. Symbolication at line level needs a dSYM, which
 a release profile without debug info does not produce.
+
+## Async code
+
+A profile of code on an async runtime needs two adjustments.
+
+The inclusive listing is useless: tasks are polled through the same runtime functions again
+and again, callgrind sees that as recursion, and the totals come out at thousands of percent.
+Work from self cost, grouped by function and by source file, and from call counts. The call
+counts are in the profile file as `calls=` lines under `fn=` and `cfn=` records; a few lines
+of Python that sum them per callee answer "how often per record is this called?", which is
+usually the question.
+
+Count calls to the clock, the allocator, locks and semaphores per unit of work. `Instant::now`
+goes through the vDSO, which callgrind sees as a handful of instructions, while on real
+hardware it is 20 ns or more. Seven clock reads per record looked like 1% of instructions and
+were worth several percent of CPU time.
+
+Use a current-thread runtime in the driver and a linger or flush interval long enough that
+batches close by size, or the valgrind slowdown changes batch boundaries and the counts stop
+being repeatable. With that, three runs of a producer agreed to 0.03%.
+
+## Build traps
+
+- A profile section in a global cargo config overrides the same key in a manifest. Set debug
+  info and stripping through `CARGO_PROFILE_RELEASE_*` environment variables, which win over
+  both, and check the binary with `readelf`.
+- An example or bench inside the crate is built with the crate's dev-dependencies, and their
+  features are unified into the build. A dev-dependency on `tokio` with `test-util` puts a
+  pausable clock into every time call. Build the driver as its own small crate with a path
+  dependency, and check `cargo tree -e features -i <crate>`.
 
 ## Pitfalls that produced wrong numbers
 

@@ -18,13 +18,29 @@ NOISE = re.compile(
     r"alloc::|__rust|__rdl|malloc|realloc|calloc|core::|std::|\[root\]"
     r"|smallvec|typed_arena|hashbrown|bumpalo"
 )
+# With debug info a frame is "short_name (path/file.rs:line)". Frames whose source is the
+# standard library or an allocator shim say nothing about who asked for the memory.
+NOISE_LOCATION = re.compile(
+    r"library/(std|alloc|core)/|/rustc/|/alloc\.rs:|raw_vec|boxed\.rs:|spec_extend\.rs:"
+    r"|spec_from|/unix\.rs:|vec/mod\.rs:|string\.rs:|slice\.rs:|str\.rs:|arc\.rs:|rc\.rs:|\?\?\?"
+)
+NOISE_NAME = re.compile(r"^(alloc|allocate|alloc_impl\w*|exchange_malloc|try_allocate_in|with_capacity\w*)$")
 
 
 def name(frame):
     frame = re.sub(r"^0x[0-9A-Fa-f]+: ", "", frame)
     frame = re.sub(r" \(in [^)]*\)$", "", frame)
-    frame = re.sub(r" \([^()]*:\d+(:\d+)?\)$", "", frame)
-    return re.sub(r"::h[0-9a-f]{16}$", "", frame)
+    return re.sub(r"::h[0-9a-f]{16}", "", frame)
+
+
+def is_noise(frame):
+    m = re.match(r"(.*) \(([^()]*:\d+(?::\d+)?)\)$", frame)
+    short, location = (m.group(1), m.group(2)) if m else (frame, "")
+    return bool(
+        NOISE.search(short)
+        or NOISE_NAME.match(short)
+        or (location and NOISE_LOCATION.search(location + ":"))
+    )
 
 
 def main():
@@ -40,12 +56,12 @@ def main():
 
     def row(p):
         stack = [name(frames[i]) for i in p["fs"]]
-        own = [f for f in stack if not NOISE.search(f)][:3]
+        own = [f for f in stack if not is_noise(f)][:3]
         return "%5.1f%% blocks %5.1f%% bytes  avg %8d  %s" % (
             100 * p["tbk"] / blocks,
             100 * p["tb"] / size,
             p["tb"] // max(p["tbk"], 1),
-            " <- ".join(f[-60:] for f in own) or (stack[1][-60:] if len(stack) > 1 else "?"),
+            " <- ".join(f[-70:] for f in own) or (stack[1][-70:] if len(stack) > 1 else "?"),
         )
 
     print("\nby number of allocations")

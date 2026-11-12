@@ -50,6 +50,15 @@ To compare two versions of the same crate, build the harness's client binary onc
 (a `[patch]` section or a path dependency pointing at each checkout) and add both as variants.
 Then the harness alternates them like any two clients.
 
+Several variants of one crate in one workspace need different version numbers, because a
+lockfile cannot hold two path packages with the same name and version. Bump the patch version
+in each copy (`0.30.1001`, `0.30.1002`) and build once without `--locked`.
+
+A fake or in-process peer reproduces the client's CPU cost per record, which makes it a good
+isolated driver. It does not reproduce what a real peer limits: fetch sizes, round trips,
+back-pressure. A setting that throttles the client against a real broker can be invisible
+against the fake one.
+
 ## What to record
 
 - Throughput in units of work per second, as the median over rounds, with the range.
